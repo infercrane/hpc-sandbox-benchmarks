@@ -270,6 +270,7 @@ describe("provider wiring projections", () => {
 			"runcloud",
 			"tama",
 			"boat",
+			"brezel",
 		]);
 		expect([...PROVIDER_IDS].filter((id) => fleet.waivers[id] !== undefined)).toEqual([]);
 
@@ -313,6 +314,7 @@ describe("provider wiring projections", () => {
 		expect(source).toContain("export const E2B_PROVENANCE");
 		expect(source).toContain("export const MODAL_PROVENANCE");
 		expect(source).toContain("export const TAMA_PROVENANCE");
+		expect(source).toContain("export const BREZEL_PROVENANCE");
 	});
 
 	test("keeps the fleet manifest free of vendor dependencies and provider subpaths", () => {

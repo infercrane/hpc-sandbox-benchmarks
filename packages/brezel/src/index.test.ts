@@ -1,0 +1,214 @@
+import { describe, expect, test } from "bun:test";
+import { BrezelClient } from "@infercrane/brezel";
+import type { CreateRequest } from "@sandbox-benchmarks/driver";
+import { isRetryableDriverCreate } from "@sandbox-benchmarks/driver";
+import { driverFromComputeSpec } from "@sandbox-benchmarks/driver/computesdk";
+import { TARGET_SPEC } from "@sandbox-benchmarks/schema/target-spec";
+import brezel, { BREZEL_SANDBOX_ID, brezelSpec } from "./index.ts";
+
+const environmentRevision = "envr_9830e105167d5161682df50b";
+const context = {
+	env: {
+		BREZEL_API_KEY: "brezel_test-token-111111111111111111111111",
+		BREZEL_API_URL: "https://brezel.test",
+		BREZEL_PROJECT_ID: "benchmark-project",
+		BREZEL_ENVIRONMENT_REVISION: environmentRevision,
+	},
+	artifact: { kind: "none" as const },
+	resolvedArtifact: { kind: "none" as const },
+};
+const request: CreateRequest = {
+	spec: TARGET_SPEC,
+	artifact: { kind: "none" },
+	deadlineMs: 300_000,
+};
+
+function json(value: unknown, status = 200): Response {
+	return new Response(JSON.stringify(value), {
+		status,
+		headers: { "content-type": "application/json" },
+	});
+}
+
+function command(stdout: string, stderr = "", exitCode = 0): Response {
+	const events = [
+		{ execution_id: "exec_test", type: "started" },
+		...(stdout
+			? [
+					{
+						execution_id: "exec_test",
+						type: "stdout",
+						data: Buffer.from(stdout).toString("base64"),
+					},
+				]
+			: []),
+		...(stderr
+			? [
+					{
+						execution_id: "exec_test",
+						type: "stderr",
+						data: Buffer.from(stderr).toString("base64"),
+					},
+				]
+			: []),
+		{ execution_id: "exec_test", type: "exited", exit_code: exitCode },
+	];
+	return new Response(`${events.map((event) => JSON.stringify(event)).join("\n")}\n`, {
+		headers: { "content-type": "application/x-ndjson" },
+	});
+}
+
+function resource(id: string, state = "running") {
+	return {
+		id,
+		state,
+		environment_revision: environmentRevision,
+		created_at: "2026-09-28T00:00:00Z",
+		updated_at: "2026-09-28T00:00:00Z",
+	};
+}
+
+function harnessFetch(
+	options: { readonly ambiguousFirstCreate?: boolean; readonly refuseFirstCreate?: boolean } = {},
+) {
+	const id = "sbx_11111111111111111111111111111111";
+	let state = "running";
+	let firstCreate = true;
+	const createKeys: string[] = [];
+	const calls: Array<{ method: string; path: string; body: unknown }> = [];
+	const fetchImplementation = async (
+		input: Parameters<typeof globalThis.fetch>[0],
+		init: Parameters<typeof globalThis.fetch>[1] = {},
+	) => {
+		const url = new URL(String(input));
+		const method = init.method ?? "GET";
+		const body = typeof init.body === "string" ? JSON.parse(init.body) : init.body;
+		calls.push({ method, path: `${url.pathname}${url.search}`, body });
+		if (method === "POST" && url.pathname === "/v1/sandboxes") {
+			createKeys.push(new Headers(init.headers).get("Idempotency-Key") ?? "");
+			if (options.refuseFirstCreate && firstCreate) {
+				firstCreate = false;
+				return json(
+					{ error: { code: "capacity_exhausted", message: "capacity unavailable" } },
+					429,
+				);
+			}
+			if (options.ambiguousFirstCreate && firstCreate) {
+				firstCreate = false;
+				throw new TypeError("connection closed after remote acceptance");
+			}
+			return json({ resource: resource(id) });
+		}
+		if (method === "GET" && url.pathname === `/v1/sandboxes/${id}`) {
+			return json(resource(id, state));
+		}
+		if (method === "GET" && url.pathname === "/v1/sandboxes") {
+			return json({ sandboxes: state === "running" ? [resource(id)] : [] });
+		}
+		if (method === "DELETE" && url.pathname === `/v1/sandboxes/${id}`) {
+			state = "deleted";
+			return json({ resource: resource(id, state) });
+		}
+		if (method === "POST" && url.pathname === `/v1/sandboxes/${id}/commands`) {
+			const argv = (body as { argv?: string[] }).argv ?? [];
+			const shell = argv.at(-1) ?? "";
+			if (shell.startsWith("df -Pk")) return command(`${80 * 1024 * 1024}\n`);
+			if (shell.startsWith("test -e")) return command("", "", 0);
+			return command("out\n", "err\n", 7);
+		}
+		if (method === "PUT" && url.pathname === `/v1/sandboxes/${id}/files`) {
+			return json({ path: url.searchParams.get("path"), size: 5 });
+		}
+		if (method === "GET" && url.pathname === `/v1/sandboxes/${id}/files`) {
+			return new Response("saved");
+		}
+		throw new Error(`unhandled test request ${method} ${url.pathname}${url.search}`);
+	};
+	const fetch = Object.assign(fetchImplementation, { preconnect() {} }) as typeof globalThis.fetch;
+	return { id, fetch, createKeys, calls, state: () => state };
+}
+
+function testDriver(fake: ReturnType<typeof harnessFetch>) {
+	const client = new BrezelClient({
+		token: context.env.BREZEL_API_KEY,
+		baseUrl: context.env.BREZEL_API_URL,
+		project: context.env.BREZEL_PROJECT_ID,
+		fetch: fake.fetch,
+	});
+	return driverFromComputeSpec(
+		"brezel",
+		brezelSpec(context, { client, pollMs: 0, readyTimeoutMs: 100, deleteTimeoutMs: 100 }),
+		context.resolvedArtifact,
+		[context.env.BREZEL_API_KEY],
+	);
+}
+
+describe("Brezel native integration", () => {
+	test("declares a strict identity, shell-detach durability, and the public SDK provenance", () => {
+		expect(brezel.id).toBe("brezel");
+		expect(brezel.execution).toEqual({ syncCapMs: 60_000, durable: "shell-detach" });
+		expect(brezel.provenance).toEqual({ packageName: "@infercrane/brezel", version: "0.1.1" });
+		expect(BREZEL_SANDBOX_ID.allows("sbx_11111111111111111111111111111111")).toBe(true);
+		expect(BREZEL_SANDBOX_ID.allows("other_1")).toBe(false);
+	});
+
+	test("preserves command streams and files, inventories the dedicated project, and converges delete", async () => {
+		const fake = harnessFetch();
+		const driver = testDriver(fake);
+		const session = await driver.create(request);
+		expect(session.sandboxRef).toEqual({ provider: "brezel", id: fake.id });
+		expect(fake.createKeys[0]).toMatch(/^benchmark-[0-9a-f-]{36}$/);
+		expect(fake.calls.find((call) => call.method === "POST")?.body).toEqual({
+			environment_revision: environmentRevision,
+			lifecycle: { expires_after_seconds: 10_800 },
+			network: { allow_internet: true },
+		});
+
+		const result = await session.exec("fixture");
+		expect(result.exit).toEqual({ kind: "exited", code: 7 });
+		expect(result.stdout).toBe("out\n");
+		expect(result.stderr).toBe("err\n");
+		expect(await session.files?.exists("/tmp/item")).toBe(true);
+		await session.files?.writeText("/tmp/item", "saved");
+		expect(await session.files?.readFile("/tmp/item")).toBe("saved");
+		expect(await driver.inventory?.list()).toEqual({
+			owned: [{ provider: "brezel", id: fake.id }],
+			foreignCount: 0,
+		});
+
+		await session.destroy();
+		expect(fake.state()).toBe("deleted");
+		expect(await driver.probes?.observe(session.sandboxRef)).toEqual({ state: "absent" });
+	});
+
+	test("replays the same create identity after an ambiguous failure and deletes the canonical allocation", async () => {
+		const fake = harnessFetch({ ambiguousFirstCreate: true });
+		await expect(testDriver(fake).create(request)).rejects.toMatchObject({ code: "create-failed" });
+		expect(fake.createKeys).toHaveLength(2);
+		expect(fake.createKeys[1]).toBe(fake.createKeys[0]);
+		expect(fake.state()).toBe("deleted");
+	});
+
+	test("treats a pre-allocation capacity refusal as definitive and retryable", async () => {
+		const fake = harnessFetch({ refuseFirstCreate: true });
+		const error = await testDriver(fake)
+			.create(request)
+			.catch((caught) => caught);
+		expect(isRetryableDriverCreate(error)).toBe(true);
+		expect(fake.createKeys).toHaveLength(1);
+		expect(fake.state()).toBe("running");
+	});
+
+	test("rejects unsupported request dimensions before making a create call", async () => {
+		const fake = harnessFetch();
+		const driver = testDriver(fake);
+		for (const input of [
+			{ ...request, spec: { ...TARGET_SPEC, vcpus: 8 } },
+			{ ...request, env: { SECRET: "no" } },
+			{ ...request, artifact: { kind: "image" as const, ref: "example/image" } },
+		]) {
+			await expect(driver.create(input)).rejects.toMatchObject({ code: "invalid-create-request" });
+		}
+		expect(fake.createKeys).toHaveLength(0);
+	});
+});

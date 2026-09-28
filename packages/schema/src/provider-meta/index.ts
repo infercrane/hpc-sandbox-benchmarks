@@ -3,6 +3,7 @@ import type { ProviderId } from "../provider-ids.ts";
 import type { ProviderArtifact, ProviderMetaModule, ProviderMetaSource } from "../provider-meta.ts";
 import blaxel from "./blaxel.ts";
 import boat from "./boat.ts";
+import brezel from "./brezel.ts";
 import daytona_container from "./daytona-container.ts";
 import daytona_vm from "./daytona-vm.ts";
 import e2b from "./e2b.ts";
@@ -31,6 +32,7 @@ const MODULES = {
 	runcloud: runcloud,
 	tama: tama,
 	boat: boat,
+	brezel: brezel,
 } as const satisfies { [P in ProviderId]: ProviderMetaModule<P> };
 
 export const REGISTRY = {
@@ -48,6 +50,7 @@ export const REGISTRY = {
 	runcloud: MODULES.runcloud.meta,
 	tama: MODULES.tama.meta,
 	boat: MODULES.boat.meta,
+	brezel: MODULES.brezel.meta,
 } as const satisfies Record<ProviderId, ProviderMetaSource>;
 
 type IdsWithArtifact<K extends ProviderArtifact["kind"]> = {

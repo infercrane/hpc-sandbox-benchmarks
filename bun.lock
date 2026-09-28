@@ -101,6 +101,21 @@
         "typescript": "catalog:",
       },
     },
+    "packages/brezel": {
+      "name": "@sandbox-benchmarks/brezel",
+      "version": "0.0.0",
+      "dependencies": {
+        "@infercrane/brezel": "catalog:computesdk",
+        "@sandbox-benchmarks/driver": "workspace:*",
+        "@sandbox-benchmarks/schema": "workspace:*",
+        "arktype": "catalog:",
+      },
+      "devDependencies": {
+        "@repo/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/daytona": {
       "name": "@sandbox-benchmarks/daytona",
       "version": "0.0.0",
@@ -429,6 +444,7 @@
       "@connectrpc/connect-node": "2.2.0",
       "@daytona/api-client": "0.211.2",
       "@daytona/sdk": "0.211.2",
+      "@infercrane/brezel": "0.1.1",
       "@namespacelabs/sdk": "1.0.0",
       "@run-cloud/sdk": "0.9.0",
       "@runloop/api-client": "1.28.0",
@@ -693,6 +709,8 @@
     "@hono/node-server": ["@hono/node-server@1.19.14", "", { "peerDependencies": { "hono": "^4" } }, "sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw=="],
 
     "@iarna/toml": ["@iarna/toml@2.2.5", "", {}, "sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg=="],
+
+    "@infercrane/brezel": ["@infercrane/brezel@0.1.1", "", {}, "sha512-i/aS6iap3GVMZ2bs/7yV301JdwB7FuM0eK9eNQcqSBH5GTYvBLG06WvB4ABteQTAeglCT1E09KAr4ep41d28Ww=="],
 
     "@isaacs/balanced-match": ["@isaacs/balanced-match@4.0.1", "", {}, "sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ=="],
 
@@ -959,6 +977,8 @@
     "@sandbox-benchmarks/blaxel": ["@sandbox-benchmarks/blaxel@workspace:packages/blaxel"],
 
     "@sandbox-benchmarks/boat": ["@sandbox-benchmarks/boat@workspace:packages/boat"],
+
+    "@sandbox-benchmarks/brezel": ["@sandbox-benchmarks/brezel@workspace:packages/brezel"],
 
     "@sandbox-benchmarks/cli": ["@sandbox-benchmarks/cli@workspace:apps/cli"],
 
