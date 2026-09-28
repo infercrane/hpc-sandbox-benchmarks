@@ -160,7 +160,7 @@ describe("Brezel native integration", () => {
 		expect(fake.createKeys[0]).toMatch(/^benchmark-[0-9a-f-]{36}$/);
 		expect(fake.calls.find((call) => call.method === "POST")?.body).toEqual({
 			environment_revision: environmentRevision,
-			lifecycle: { expires_after_seconds: 10_800 },
+			lifecycle: { expires_after_seconds: 7_200 },
 			network: { allow_internet: true },
 		});
 
