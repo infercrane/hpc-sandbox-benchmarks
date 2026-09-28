@@ -97,6 +97,8 @@ jobs:
 
       - name: Run suite and normalize
         env:
+          # Fork-only evidence lane: the measured sandbox must clone the exact commit dispatched here.
+          BENCH_REPO_URL: https://github.com/infercrane/hpc-sandbox-benchmarks
           BENCH_REPO_REF: ${{ github.sha }}
           BENCH_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BENCH_ACCOUNT: ${{ inputs.account }}
