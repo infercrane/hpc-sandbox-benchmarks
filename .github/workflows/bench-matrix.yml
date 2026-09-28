@@ -46,7 +46,9 @@ jobs:
   plan:
     name: Freeze experiment
     if: >
-      github.repository == 'starslingdev/hpc-sandbox-benchmarks' &&
+      (github.repository == 'starslingdev/hpc-sandbox-benchmarks' ||
+       (github.repository == 'infercrane/hpc-sandbox-benchmarks' &&
+        startsWith(github.ref, 'refs/heads/evidence/'))) &&
       (github.ref == 'refs/heads/main' || inputs.allow_branch)
     runs-on: ubuntu-24.04
     permissions:
