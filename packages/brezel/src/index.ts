@@ -189,7 +189,9 @@ export function brezelSpec(
 			filesystem: {
 				readFile: async (path: string) => new TextDecoder().decode(await native.readFile(path)),
 				exists: async (path: string) =>
-					(await exec(native, `test -e -- ${quoteShell(path)}`)).exitCode === 0,
+					// dash's `test` builtin rejects `test -e -- path`; quoting the unary operand is
+					// sufficient and keeps the shell-detach completion probe portable on Ubuntu.
+					(await exec(native, `test -e ${quoteShell(path)}`)).exitCode === 0,
 				writeFile: async (path: string, content: string) => {
 					await native.writeFile(path, content);
 				},
