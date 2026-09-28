@@ -169,6 +169,14 @@ describe("Brezel native integration", () => {
 		expect(result.stdout).toBe("out\n");
 		expect(result.stderr).toBe("err\n");
 		expect(await session.files?.exists("/tmp/item")).toBe(true);
+		expect(
+			fake.calls.some(
+				(call) =>
+					call.method === "POST" &&
+					Array.isArray((call.body as { argv?: unknown }).argv) &&
+					(call.body as { argv: string[] }).argv.at(-1) === "test -e '/tmp/item'",
+			),
+		).toBe(true);
 		await session.files?.writeText("/tmp/item", "saved");
 		expect(await session.files?.readFile("/tmp/item")).toBe("saved");
 		expect(await driver.inventory?.list()).toEqual({
