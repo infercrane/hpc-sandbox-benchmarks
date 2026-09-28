@@ -11,7 +11,9 @@ import { BREZEL_PROVENANCE } from "./provenance.ts";
 
 export const BREZEL_SANDBOX_ID = type(/^sbx_[A-Za-z0-9_-]+$/);
 const TERMINAL_STATES = new Set(["deleted", "expired", "failed"]);
-const CREATE_TTL_SECONDS = 3 * 60 * 60;
+// The qualified Brezel benchmark project caps a single allocation at two hours. The longest
+// Starsling task is routed through shell-detach and remains below this allocation boundary.
+const CREATE_TTL_SECONDS = 2 * 60 * 60;
 const CONTROL_TIMEOUT_MS = 45_000;
 const READY_TIMEOUT_MS = 3 * 60_000;
 const DELETE_TIMEOUT_MS = 60_000;
