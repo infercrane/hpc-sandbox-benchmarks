@@ -92,6 +92,7 @@ describe("bench-suite driver vs legacy selection (Phase A unit 1)", () => {
 		expect(driverIds.sort()).toEqual([
 			"blaxel",
 			"boat",
+			"brezel",
 			"daytona-container",
 			"daytona-vm",
 			"e2b",

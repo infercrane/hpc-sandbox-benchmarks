@@ -238,6 +238,7 @@ Do this in the GitHub UI (Settings → Environments / Rules / Actions), then del
    | `RUN_CLOUD_API_KEY` | run.cloud provider runtime and validation |
    | `TAMA_TOKEN` | tama provider runtime and validation |
    | `BOAT_API_KEY` | boat provider runtime and validation |
+   | `BREZEL_API_KEY` | Brezel provider runtime and validation |
    <!-- <<< end generated: provider-secrets -->
 
    For Boat, a key created with the `ci` preset is insufficient: that preset omits
@@ -300,6 +301,9 @@ Do this in the GitHub UI (Settings → Environments / Rules / Actions), then del
    | `VERCEL_PROJECT_NAME` | Vercel Sandbox | — |
    | `TAMA_CLI` | tama | — |
    | `BOAT_BASE_URL` | boat | — |
+   | `BREZEL_API_URL` | Brezel | — |
+   | `BREZEL_PROJECT_ID` | Brezel | — |
+   | `BREZEL_ENVIRONMENT_REVISION` | Brezel | — |
    <!-- <<< end generated: provider-variables -->
 
    Optional values with a declared provider default use it when unset. The two Vercel namespace
