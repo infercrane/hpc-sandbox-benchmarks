@@ -139,7 +139,9 @@ async function destroyAndConverge(
 
 async function exec(native: Sandbox, command: string, options?: ExecOptions) {
 	options?.signal?.throwIfAborted();
-	const result = await native.run(["/bin/sh", "-lc", command], { timeoutSeconds: 60 });
+	// Starsling's pinned workload preamble intentionally uses Bash features such as `source` and
+	// `pipefail`; running it through Ubuntu's dash would silently skip those controls.
+	const result = await native.run(["/bin/bash", "-lc", command], { timeoutSeconds: 60 });
 	options?.signal?.throwIfAborted();
 	return {
 		exitCode: result.exitCode,

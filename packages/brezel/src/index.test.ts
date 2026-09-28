@@ -177,6 +177,11 @@ describe("Brezel native integration", () => {
 					(call.body as { argv: string[] }).argv.at(-1) === "test -e '/tmp/item'",
 			),
 		).toBe(true);
+		expect(
+			fake.calls
+				.filter((call) => call.method === "POST" && call.path.endsWith("/commands"))
+				.every((call) => (call.body as { argv: string[] }).argv[0] === "/bin/bash"),
+		).toBe(true);
 		await session.files?.writeText("/tmp/item", "saved");
 		expect(await session.files?.readFile("/tmp/item")).toBe("saved");
 		expect(await driver.inventory?.list()).toEqual({
